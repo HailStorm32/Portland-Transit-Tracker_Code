@@ -3,12 +3,23 @@
 #include <WiFi.h>
 #include "config.h"
 
+
 //----------------Begin Globals------------------------------//
+struct trains
+{
+  uint8_t numOfTrains;
+  double lat[49];
+  double lon[49];
+}redLine,blueLine,greenLine,yellowLine,orangeLine;
+
+#include "functions.h"
+
 const uint8_t NUM_RED_STOPS = 27;
 const uint8_t NUM_BLUE_STOPS = 49;
 const uint8_t NUM_GREEN_STOPS = 30;
 const uint8_t NUM_YELLOW_STOPS = 17;
 const uint8_t NUM_ORANGE_STOPS = 17;
+
 
 struct redStationBounds
 {
@@ -63,6 +74,8 @@ struct orangeStationBounds
 }ORANGE_STATION_BOUNDS;
 
 
+
+
 Adafruit_NeoPixel ledsRedLine(NUM_RED_STOPS, 14, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel ledsBlueLine(NUM_BLUE_STOPS, 12, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel ledsGreenLine(NUM_GREEN_STOPS, 26, NEO_GRB + NEO_KHZ800);
@@ -79,6 +92,9 @@ void setup() {
   ledsGreenLine.begin();
   ledsYellowLine.begin();
   ledsOrangeLine.begin();
+
+  
+  
   
   WiFi.begin(WIFI_SSID, WIFI_PSWD);
 
@@ -96,6 +112,7 @@ void setup() {
 }
 
 void loop() {
+
     Serial.print("connecting to ");
     Serial.println("developer.trimet.org");
 
@@ -128,11 +145,28 @@ void loop() {
     }
 
 
-    String line;
+    String line; 
+
     line = client.readString();
+    
+    Serial.print(line);
+
+    parseApiString(&line, &blueLine);
+    
     Serial.print(line);
     Serial.println();
     Serial.println("closing connection");
+
+    Serial.println("--------------");
+    Serial.println(blueLine.numOfTrains);
+    Serial.println("--------------");
+    
+    for(int i = 0; i < 49; i++)
+    {
+      Serial.print(blueLine.lat[i],7);
+      Serial.print(" , ");
+      Serial.println(blueLine.lon[i],6);
+    }
 
     
 
