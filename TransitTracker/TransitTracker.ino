@@ -24,8 +24,10 @@ const uint8_t NUM_GREEN_STOPS = 30;
 const uint8_t NUM_YELLOW_STOPS = 17;
 const uint8_t NUM_ORANGE_STOPS = 17;
 
-bool canReadOccupancy = true;
+const int LED_DELAY_ON_MS = .5;
+const int LED_DELAY_OFF_MS = 0;
 
+bool canReadOccupancy = true;
 
 struct redStationBounds
 {
@@ -91,26 +93,13 @@ struct stationOccupancy
 
 #include "functions.h"
 
-Adafruit_NeoPixel ledsRedLine(NUM_RED_STOPS, 14, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel ledsBlueLine(NUM_BLUE_STOPS, 12, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel ledsGreenLine(NUM_GREEN_STOPS, 26, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel ledsYellowLine(NUM_YELLOW_STOPS, 27, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel ledsOrangeLine(NUM_ORANGE_STOPS, 32, NEO_GRB + NEO_KHZ800);
+
 
 
 
 void setup() {
   Serial.begin(115200);
-  
-  ledsRedLine.begin();
-  ledsBlueLine.begin();
-  ledsGreenLine.begin();
-  ledsYellowLine.begin();
-  ledsOrangeLine.begin();
-
-  
-  
-  
+ 
   WiFi.begin(WIFI_SSID, WIFI_PSWD);
 
   while (WiFi.status() != WL_CONNECTED)
@@ -124,33 +113,57 @@ void setup() {
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 
+  xTaskCreatePinnedToCore(ledControl, "ledControl", 10000, NULL, 3, NULL,  0); 
+
 }
 
 void loop() {
   
     String apiCallResult; 
 
-    callTriMetApi(RED_ROUTE_ID, &apiCallResult);
+    //callTriMetApi(RED_ROUTE_ID, &apiCallResult);
     
-    Serial.print(apiCallResult);
+    //Serial.print(apiCallResult);
 
+    
+    callTriMetApi(RED_ROUTE_ID, &apiCallResult);
     parseApiString(&apiCallResult, &redLineTrains);
+    apiCallResult = " ";
+    delay(250);
+    callTriMetApi(BLUE_ROUTE_ID, &apiCallResult);
+    parseApiString(&apiCallResult, &blueLineTrains);
+    apiCallResult = " ";
+    delay(250);
+    callTriMetApi(GREEN_ROUTE_ID, &apiCallResult);
+    parseApiString(&apiCallResult, &greenLineTrains);
+    apiCallResult = " ";
+    delay(250);
+    callTriMetApi(YELLOW_ROUTE_ID, &apiCallResult);
+    parseApiString(&apiCallResult, &yellowLineTrains);
+    apiCallResult = " ";
+    delay(250);
+    callTriMetApi(ORANGE_ROUTE_ID, &apiCallResult);
+    parseApiString(&apiCallResult, &orangeLineTrains);
+
+    
     
     Serial.println();
 
 
     Serial.println("--------------");
-    Serial.println(redLineTrains.numOfTrains);
+    Serial.println(orangeLineTrains.numOfTrains);
     Serial.println("--------------");
     
     for(int i = 0; i < 27; i++)
     {
-      Serial.print(redLineTrains.lat[i],7);
+      Serial.print(orangeLineTrains.lat[i],7);
       Serial.print(" , ");
-      Serial.println(redLineTrains.lon[i],6);
+      Serial.println(orangeLineTrains.lon[i],6);
     }
 
     findStationOccupancy();
+    Serial.println("\n\n");
+    Serial.println("---RED LINE---");
 
     for(int i = 0; i < 27; i++)
     {
@@ -163,7 +176,64 @@ void loop() {
         Serial.println(i);
       }
     }
-while(true){}
-   //delay(55000);
+
+
+    Serial.println("\n\n");
+    Serial.println("---BLUE LINE---");
+    for(int i = 0; i < 49; i++)
+    {
+      if(stationFilledLive.blueStation[i] == true)
+      {
+        Serial.print("Train at: ");
+        Serial.print(BLUE_STATION_BOUNDS.LAT[i],7);
+        Serial.print(" , ");
+        Serial.println(BLUE_STATION_BOUNDS.LON[i],6);
+        Serial.println(i);
+      }
+    }
+
+    Serial.println("\n\n");
+    Serial.println("---GREEN LINE---");
+    for(int i = 0; i < 30; i++)
+    {
+      if(stationFilledLive.greenStation[i] == true)
+      {
+        Serial.print("Train at: ");
+        Serial.print(GREEN_STATION_BOUNDS.LAT[i],7);
+        Serial.print(" , ");
+        Serial.println(GREEN_STATION_BOUNDS.LON[i],6);
+        Serial.println(i);
+      }
+    }
+    
+    Serial.println("\n\n");
+    Serial.println("---YELLOW LINE---");
+    for(int i = 0; i < 17; i++)
+    {
+      if(stationFilledLive.yellowStation[i] == true)
+      {
+        Serial.print("Train at: ");
+        Serial.print(YELLOW_STATION_BOUNDS.LAT[i],7);
+        Serial.print(" , ");
+        Serial.println(YELLOW_STATION_BOUNDS.LON[i],6);
+        Serial.println(i);
+      }
+    }
+    
+    Serial.println("\n\n");
+    Serial.println("---ORANGE LINE---");
+    for(int i = 0; i < 17; i++)
+    {
+      if(stationFilledLive.orangeStation[i] == true)
+      {
+        Serial.print("Train at: ");
+        Serial.print(ORANGE_STATION_BOUNDS.LAT[i],7);
+        Serial.print(" , ");
+        Serial.println(ORANGE_STATION_BOUNDS.LON[i],6);
+        Serial.println(i);
+      }
+    }
+//while(true){}
+   delay(55000);
 
 }

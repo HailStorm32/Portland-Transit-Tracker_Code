@@ -293,7 +293,7 @@ void findStationOccupancy()
   {
     for(uint8_t stopIndx = 0; stopIndx < NUM_ORANGE_STOPS; stopIndx++)
     {
-      latDiff = ORANGE_STATION_BOUNDS.LAT[stopIndx] - yellowLineTrains.lat[trainIndx];
+      latDiff = ORANGE_STATION_BOUNDS.LAT[stopIndx] - orangeLineTrains.lat[trainIndx];
       latDiff = abs(latDiff);
       
       lonDiff = orangeLineTrains.lon[trainIndx] - ORANGE_STATION_BOUNDS.LON[stopIndx];
@@ -337,5 +337,275 @@ void findStationOccupancy()
     }
   }
   canReadOccupancy = true;
-  
 }
+
+
+/*
+ * Description: Code that runs on core 0 that controls LED timing
+ * 
+ * Arguments:
+ *  none
+ * 
+ * Return:
+ *  void
+ */
+ void ledControl(void* parameter)
+ {
+  uint8_t activeLedsNum = 0;
+  uint8_t globalIndx = 0;
+  uint8_t globalIndxSnapShot = 0;
+  
+  bool isContinuing = false;
+  bool hasFinishedRed = false;
+  bool hasFinishedBlue = false;
+  bool hasFinishedGreen = false;
+  bool hasFinishedYellow = false;
+  bool hasFinishedOrange = false;
+  const bool TASK_DELAY = 1; //10
+  
+  Adafruit_NeoPixel ledsRedLine(NUM_RED_STOPS, 14, NEO_GRB + NEO_KHZ800);
+  Adafruit_NeoPixel ledsBlueLine(NUM_BLUE_STOPS, 12, NEO_GRB + NEO_KHZ800);
+  Adafruit_NeoPixel ledsGreenLine(NUM_GREEN_STOPS, 26, NEO_GRB + NEO_KHZ800);
+  Adafruit_NeoPixel ledsYellowLine(NUM_YELLOW_STOPS, 27, NEO_GRB + NEO_KHZ800);
+  Adafruit_NeoPixel ledsOrangeLine(NUM_ORANGE_STOPS, 32, NEO_GRB + NEO_KHZ800);
+
+  ledsRedLine.begin();
+  ledsBlueLine.begin();
+  ledsGreenLine.begin();
+  ledsYellowLine.begin();
+  ledsOrangeLine.begin();
+  
+  Serial.print("LED Code Running on core:");
+  Serial.println(xPortGetCoreID());
+  
+  while(true)
+  {
+    while(!canReadOccupancy){vTaskDelay(TASK_DELAY);} //Only continue if the occupancy array isnt being written to
+
+      if(isContinuing)
+      {
+        globalIndx = globalIndxSnapShot;
+        isContinuing = false;
+      }
+  
+      //Activate Red LEDs 
+      if(activeLedsNum < 18)
+      {
+        while(globalIndx < NUM_RED_STOPS && activeLedsNum < 18 && !hasFinishedRed)
+        {
+          while(!canReadOccupancy){vTaskDelay(TASK_DELAY);} //Only continue if the occupancy array isnt being written to
+          if(stationFilledLive.redStation[globalIndx] == true)
+          {
+            ledsRedLine.setPixelColor(globalIndx, ledsRedLine.Color(150, 0, 0));
+            activeLedsNum++;
+          }
+          else
+          {
+           /* ledsRedLine.setPixelColor(globalIndx, ledsRedLine.Color(0, 0, 0));
+            if(activeLedsNum > 0)
+            {
+              activeLedsNum--;
+            }*/
+          }
+          globalIndx++;
+        }
+          
+        if(globalIndx >= NUM_RED_STOPS)
+        {
+          globalIndx = 0;
+          hasFinishedRed = true;
+        }
+  
+        //Only say we are going to start where we left off if we have reached our limit of on leds and we havent finished all the lines
+        if(activeLedsNum >= 18 && !(hasFinishedRed && hasFinishedBlue && hasFinishedGreen && hasFinishedYellow && hasFinishedOrange))
+        {
+          globalIndxSnapShot = globalIndx;
+          isContinuing = true;
+        }
+      }
+  
+      //Activate Blue LEDs 
+      if(activeLedsNum < 18)
+      {    
+        while(globalIndx < NUM_BLUE_STOPS && activeLedsNum < 18 && !hasFinishedBlue)
+        {
+          while(!canReadOccupancy){vTaskDelay(TASK_DELAY);} //Only continue if the occupancy array isnt being written to
+          if(stationFilledLive.blueStation[globalIndx] == true)
+          {
+            ledsBlueLine.setPixelColor(globalIndx, ledsBlueLine.Color(0, 0, 150));
+            activeLedsNum++;
+          }
+          else
+          {
+            /*ledsBlueLine.setPixelColor(globalIndx, ledsBlueLine.Color(0, 0, 0));
+            if(activeLedsNum > 0)
+            {
+              activeLedsNum--;
+            }*/
+          }
+          globalIndx++;
+        }
+          
+        if(globalIndx >= NUM_BLUE_STOPS)
+        {
+          globalIndx = 0;
+          hasFinishedBlue = true;
+        }
+    
+        //Only say we are going to start where we left off if we have reached our limit of on leds and we havent finished all the lines
+        if(activeLedsNum >= 18 && !(hasFinishedRed && hasFinishedBlue && hasFinishedGreen && hasFinishedYellow && hasFinishedOrange))
+        {
+          globalIndxSnapShot = globalIndx;
+          isContinuing = true;
+        }
+      }
+      
+      //Activate Green LEDs
+      if(activeLedsNum < 18)
+      {     
+        while(globalIndx < NUM_GREEN_STOPS && activeLedsNum < 18 && !hasFinishedGreen)
+        {
+          while(!canReadOccupancy){vTaskDelay(TASK_DELAY);} //Only continue if the occupancy array isnt being written to
+          if(stationFilledLive.greenStation[globalIndx] == true)
+          {
+            ledsGreenLine.setPixelColor(globalIndx, ledsGreenLine.Color(0, 150, 0));
+            activeLedsNum++;
+          }
+          else
+          {
+            /*ledsGreenLine.setPixelColor(globalIndx, ledsGreenLine.Color(0, 0, 0));
+            if(activeLedsNum > 0)
+            {
+              activeLedsNum--;
+            }*/
+          }
+          globalIndx++;
+        }
+          
+        if(globalIndx >= NUM_GREEN_STOPS)
+        {
+          globalIndx = 0;
+          hasFinishedGreen = true;
+        }
+    
+        //Only say we are going to start where we left off if we have reached our limit of on leds and we havent finished all the lines
+        if(activeLedsNum >= 18 && !(hasFinishedRed && hasFinishedBlue && hasFinishedGreen && hasFinishedYellow && hasFinishedOrange))
+        {
+          globalIndxSnapShot = globalIndx;
+          isContinuing = true;
+        }
+      }
+            
+      //Activate Yellow LEDs
+      if(activeLedsNum < 18)
+      {     
+        while(globalIndx < NUM_YELLOW_STOPS && activeLedsNum < 18 && !hasFinishedYellow)
+        {
+          while(!canReadOccupancy){vTaskDelay(TASK_DELAY);} //Only continue if the occupancy array isnt being written to
+          if(stationFilledLive.yellowStation[globalIndx] == true)
+          {
+            ledsYellowLine.setPixelColor(globalIndx, ledsYellowLine.Color(255, 255, 0));
+            activeLedsNum++;
+          }
+          else
+          {
+            /*ledsYellowLine.setPixelColor(globalIndx, ledsYellowLine.Color(0, 0, 0));
+            if(activeLedsNum > 0)
+            {
+              activeLedsNum--;
+            }*/
+          }
+          globalIndx++;
+        }
+        
+        if(globalIndx >= NUM_YELLOW_STOPS)
+        {
+          globalIndx = 0;
+          hasFinishedYellow = true;
+        }
+    
+        //Only say we are going to start where we left off if we have reached our limit of on leds and we havent finished all the lines
+        if(activeLedsNum >= 18 && !(hasFinishedRed && hasFinishedBlue && hasFinishedGreen && hasFinishedYellow && hasFinishedOrange))
+        {
+          globalIndxSnapShot = globalIndx;
+          isContinuing = true;
+        }
+      }
+                  
+      //Activate Orange LEDs  
+      if(activeLedsNum < 18)
+      {   
+        while(globalIndx < NUM_ORANGE_STOPS && activeLedsNum < 18 && !hasFinishedOrange)
+        {
+          while(!canReadOccupancy){vTaskDelay(TASK_DELAY);} //Only continue if the occupancy array isnt being written to
+          if(stationFilledLive.orangeStation[globalIndx] == true)
+          {
+            ledsOrangeLine.setPixelColor(globalIndx, ledsOrangeLine.Color(255, 128, 0));
+            activeLedsNum++;
+          }
+          else
+          {
+            /*ledsOrangeLine.setPixelColor(globalIndx, ledsOrangeLine.Color(0, 0, 0));
+            if(activeLedsNum > 0)
+            {
+              activeLedsNum--;
+            }*/
+          }
+          globalIndx++;
+        }
+          
+        if(globalIndx >= NUM_ORANGE_STOPS)
+        {
+          globalIndx = 0;
+          hasFinishedOrange = true;
+        }
+    
+        //Only say we are going to start where we left off if we have reached our limit of on leds and we havent finished all the lines
+        if(activeLedsNum >= 18 && !(hasFinishedRed && hasFinishedBlue && hasFinishedGreen && hasFinishedYellow && hasFinishedOrange))
+        {
+          globalIndxSnapShot = globalIndx;
+          isContinuing = true;
+        }
+      }
+  
+      
+      if(hasFinishedRed && hasFinishedBlue && hasFinishedGreen && hasFinishedYellow && hasFinishedOrange)
+      {
+        globalIndx = 0;
+        isContinuing = false;
+        hasFinishedRed = false;
+        hasFinishedBlue = false;
+        hasFinishedGreen = false;
+        hasFinishedYellow = false;
+        hasFinishedOrange = false;
+      }
+  
+      //Push the changes to the LEDs we set
+      ledsRedLine.show();
+      ledsBlueLine.show();
+      ledsGreenLine.show();
+      ledsYellowLine.show();
+      ledsOrangeLine.show();
+      
+      delay(LED_DELAY_ON_MS);
+      
+      ledsRedLine.clear();
+      ledsBlueLine.clear();
+      ledsGreenLine.clear();
+      ledsYellowLine.clear();
+      ledsOrangeLine.clear();
+      ledsRedLine.show();
+      ledsBlueLine.show();
+      ledsGreenLine.show();
+      ledsYellowLine.show();
+      ledsOrangeLine.show();
+  
+      activeLedsNum = 0;
+      
+      delay(LED_DELAY_OFF_MS);
+     
+    
+    
+    vTaskDelay(TASK_DELAY);
+  }
+ }
