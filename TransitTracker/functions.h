@@ -81,8 +81,11 @@ void parseApiString(String * apiString, struct trains * trainLine)
   cleanUpString(apiString);
   initTrainStruct(trainLine);
 
+  /*Serial.print(*apiString);
+  Serial.println();*/
+
   //Get total number of trains in api data string while also getting the lon and lat data per train
-  while(apiString->indexOf(" longitude=") != -1 && apiString->indexOf(" latitude=") != -1)
+  while(apiString->indexOf("<vehicle") != -1 && numOfTrains < 49)//apiString->indexOf(" longitude=") != -1 && apiString->indexOf(" latitude=") != -1
   {
     //Get the longitude
     indxBegin = apiString->indexOf(" longitude=")+12;//Get the index of the begining of the number
@@ -90,6 +93,7 @@ void parseApiString(String * apiString, struct trains * trainLine)
 
     numHolder = apiString->substring(indxBegin, indxEnd);
     trainLine->lon[numOfTrains] = numHolder.toDouble();
+
 
     //Get the latitude
     indxBegin = apiString->indexOf(" latitude=")+11;
@@ -103,10 +107,23 @@ void parseApiString(String * apiString, struct trains * trainLine)
     indxBegin = apiString->indexOf("<vehicle ");
     indxEnd = apiString->indexOf(" />")+3;
 
-    apiString->remove(indxBegin,(indxEnd-indxBegin));
+
+    if(indxEnd-indxBegin >= apiString->length())
+    {
+      apiString->remove(indxBegin,apiString->length());
+    }
+    else
+    {
+      apiString->remove(indxBegin,abs(indxEnd-indxBegin));
+    }
+
 
     //Serial.print(*apiString);
-    numOfTrains++;
+    
+    if(numOfTrains < 49)
+    {
+      numOfTrains++;
+    }
   }
   trainLine->numOfTrains = numOfTrains;
 }
@@ -128,7 +145,7 @@ bool callTriMetApi(const uint16_t ROUTE_ID, String * callResult)
   Serial.print("connecting to ");
   Serial.println("developer.trimet.org");
 
-  // Use WiFiClient class to create TCP connections
+  //Use WiFiClient class to create TCP connections
   WiFiClient client;
   const int httpPort = 80;
   if (!client.connect("developer.trimet.org", httpPort)) {
@@ -136,7 +153,7 @@ bool callTriMetApi(const uint16_t ROUTE_ID, String * callResult)
       return false;
   }
 
-  // We now create a URI for the request
+  //We now create a URI for the request
   String url = "/ws/V2/vehicles/onRouteOnly/true/showStale/false/xml/true/routes/";
   url += ROUTE_ID;
   url += "/appID/";
@@ -161,6 +178,8 @@ bool callTriMetApi(const uint16_t ROUTE_ID, String * callResult)
   }
 
   *callResult = client.readString();
+  client.stop();
+  client.flush();
   Serial.println("closing connection");
   return true;
 }
@@ -341,7 +360,7 @@ void findStationOccupancy()
 
 
 /*
- * Description: Code that runs on core 0 that controls LED timing
+ * Description: Code that runs on core 1 that controls LED timing
  * 
  * Arguments:
  *  none
@@ -361,22 +380,10 @@ void findStationOccupancy()
   bool hasFinishedGreen = false;
   bool hasFinishedYellow = false;
   bool hasFinishedOrange = false;
-  const bool TASK_DELAY = 1; //10
+  const uint8_t TASK_DELAY = 0; 
   
-  Adafruit_NeoPixel ledsRedLine(NUM_RED_STOPS, 14, NEO_GRB + NEO_KHZ800);
-  Adafruit_NeoPixel ledsBlueLine(NUM_BLUE_STOPS, 12, NEO_GRB + NEO_KHZ800);
-  Adafruit_NeoPixel ledsGreenLine(NUM_GREEN_STOPS, 26, NEO_GRB + NEO_KHZ800);
-  Adafruit_NeoPixel ledsYellowLine(NUM_YELLOW_STOPS, 27, NEO_GRB + NEO_KHZ800);
-  Adafruit_NeoPixel ledsOrangeLine(NUM_ORANGE_STOPS, 32, NEO_GRB + NEO_KHZ800);
-
-  ledsRedLine.begin();
-  ledsBlueLine.begin();
-  ledsGreenLine.begin();
-  ledsYellowLine.begin();
-  ledsOrangeLine.begin();
-  
-  Serial.print("LED Code Running on core:");
-  Serial.println(xPortGetCoreID());
+  /*Serial.print("LED Code Running on core:");
+  Serial.println(xPortGetCoreID());*/
   
   while(true)
   {
@@ -399,24 +406,17 @@ void findStationOccupancy()
             ledsRedLine.setPixelColor(globalIndx, ledsRedLine.Color(150, 0, 0));
             activeLedsNum++;
           }
-          else
-          {
-           /* ledsRedLine.setPixelColor(globalIndx, ledsRedLine.Color(0, 0, 0));
-            if(activeLedsNum > 0)
-            {
-              activeLedsNum--;
-            }*/
-          }
           globalIndx++;
         }
-          
+        
+        //If we have reached the end of the array, we have completed that train line  
         if(globalIndx >= NUM_RED_STOPS)
         {
           globalIndx = 0;
           hasFinishedRed = true;
         }
   
-        //Only say we are going to start where we left off if we have reached our limit of on leds and we havent finished all the lines
+        //Only set the flag to start where we left off if we have reached our limit of on leds and we havent finished all the train lines
         if(activeLedsNum >= 18 && !(hasFinishedRed && hasFinishedBlue && hasFinishedGreen && hasFinishedYellow && hasFinishedOrange))
         {
           globalIndxSnapShot = globalIndx;
@@ -435,24 +435,17 @@ void findStationOccupancy()
             ledsBlueLine.setPixelColor(globalIndx, ledsBlueLine.Color(0, 0, 150));
             activeLedsNum++;
           }
-          else
-          {
-            /*ledsBlueLine.setPixelColor(globalIndx, ledsBlueLine.Color(0, 0, 0));
-            if(activeLedsNum > 0)
-            {
-              activeLedsNum--;
-            }*/
-          }
           globalIndx++;
         }
-          
+        
+        //If we have reached the end of the array, we have completed that train line  
         if(globalIndx >= NUM_BLUE_STOPS)
         {
           globalIndx = 0;
           hasFinishedBlue = true;
         }
     
-        //Only say we are going to start where we left off if we have reached our limit of on leds and we havent finished all the lines
+        //Only set the flag to start where we left off if we have reached our limit of on leds and we havent finished all the train lines
         if(activeLedsNum >= 18 && !(hasFinishedRed && hasFinishedBlue && hasFinishedGreen && hasFinishedYellow && hasFinishedOrange))
         {
           globalIndxSnapShot = globalIndx;
@@ -471,24 +464,17 @@ void findStationOccupancy()
             ledsGreenLine.setPixelColor(globalIndx, ledsGreenLine.Color(0, 150, 0));
             activeLedsNum++;
           }
-          else
-          {
-            /*ledsGreenLine.setPixelColor(globalIndx, ledsGreenLine.Color(0, 0, 0));
-            if(activeLedsNum > 0)
-            {
-              activeLedsNum--;
-            }*/
-          }
           globalIndx++;
         }
-          
+        
+        //If we have reached the end of the array, we have completed that train line  
         if(globalIndx >= NUM_GREEN_STOPS)
         {
           globalIndx = 0;
           hasFinishedGreen = true;
         }
     
-        //Only say we are going to start where we left off if we have reached our limit of on leds and we havent finished all the lines
+        //Only set the flag to start where we left off if we have reached our limit of on leds and we havent finished all the train lines
         if(activeLedsNum >= 18 && !(hasFinishedRed && hasFinishedBlue && hasFinishedGreen && hasFinishedYellow && hasFinishedOrange))
         {
           globalIndxSnapShot = globalIndx;
@@ -507,24 +493,17 @@ void findStationOccupancy()
             ledsYellowLine.setPixelColor(globalIndx, ledsYellowLine.Color(255, 255, 0));
             activeLedsNum++;
           }
-          else
-          {
-            /*ledsYellowLine.setPixelColor(globalIndx, ledsYellowLine.Color(0, 0, 0));
-            if(activeLedsNum > 0)
-            {
-              activeLedsNum--;
-            }*/
-          }
           globalIndx++;
         }
         
+        //If we have reached the end of the array, we have completed that train line
         if(globalIndx >= NUM_YELLOW_STOPS)
         {
           globalIndx = 0;
           hasFinishedYellow = true;
         }
     
-        //Only say we are going to start where we left off if we have reached our limit of on leds and we havent finished all the lines
+        //Only set the flag to start where we left off if we have reached our limit of on leds and we havent finished all the train lines
         if(activeLedsNum >= 18 && !(hasFinishedRed && hasFinishedBlue && hasFinishedGreen && hasFinishedYellow && hasFinishedOrange))
         {
           globalIndxSnapShot = globalIndx;
@@ -543,24 +522,17 @@ void findStationOccupancy()
             ledsOrangeLine.setPixelColor(globalIndx, ledsOrangeLine.Color(255, 128, 0));
             activeLedsNum++;
           }
-          else
-          {
-            /*ledsOrangeLine.setPixelColor(globalIndx, ledsOrangeLine.Color(0, 0, 0));
-            if(activeLedsNum > 0)
-            {
-              activeLedsNum--;
-            }*/
-          }
           globalIndx++;
         }
-          
+
+        //If we have reached the end of the array, we have completed that train line
         if(globalIndx >= NUM_ORANGE_STOPS)
         {
           globalIndx = 0;
           hasFinishedOrange = true;
         }
     
-        //Only say we are going to start where we left off if we have reached our limit of on leds and we havent finished all the lines
+        //Only set the flag to start where we left off if we have reached our limit of on leds and we havent finished all the train lines
         if(activeLedsNum >= 18 && !(hasFinishedRed && hasFinishedBlue && hasFinishedGreen && hasFinishedYellow && hasFinishedOrange))
         {
           globalIndxSnapShot = globalIndx;
@@ -568,7 +540,7 @@ void findStationOccupancy()
         }
       }
   
-      
+      //If we have finished all the lines, time to reset everying to start from the begining 
       if(hasFinishedRed && hasFinishedBlue && hasFinishedGreen && hasFinishedYellow && hasFinishedOrange)
       {
         globalIndx = 0;
@@ -606,6 +578,6 @@ void findStationOccupancy()
      
     
     
-    vTaskDelay(TASK_DELAY);
+    vTaskDelay(TASK_DELAY);//Delay in cycles to allow the cpu to do other stuff
   }
  }

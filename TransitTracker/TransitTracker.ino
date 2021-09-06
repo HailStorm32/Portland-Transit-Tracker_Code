@@ -91,6 +91,12 @@ struct stationOccupancy
   bool orangeStation[NUM_ORANGE_STOPS] = {false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false};
 }stationFilledLive;
 
+Adafruit_NeoPixel ledsRedLine(NUM_RED_STOPS, 14, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel ledsBlueLine(NUM_BLUE_STOPS, 12, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel ledsGreenLine(NUM_GREEN_STOPS, 26, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel ledsYellowLine(NUM_YELLOW_STOPS, 27, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel ledsOrangeLine(NUM_ORANGE_STOPS, 32, NEO_GRB + NEO_KHZ800);
+
 #include "functions.h"
 
 
@@ -99,33 +105,52 @@ struct stationOccupancy
 
 void setup() {
   Serial.begin(115200);
+  
+  ledsRedLine.begin();
+  ledsBlueLine.begin();
+  ledsGreenLine.begin();
+  ledsYellowLine.begin();
+  ledsOrangeLine.begin();
  
   WiFi.begin(WIFI_SSID, WIFI_PSWD);
 
+  uint8_t indx = 0;
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(500);
     Serial.print(".");
+    if(indx < 19)
+    {
+      ledsGreenLine.setPixelColor(indx, ledsGreenLine.Color(0, 150, 0));
+      ledsGreenLine.show();
+      indx++;
+    }
   }
+
+  ledsGreenLine.clear();
+  ledsGreenLine.show();
 
   Serial.println("");
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 
-  xTaskCreatePinnedToCore(ledControl, "ledControl", 10000, NULL, 3, NULL,  0); 
+  xTaskCreatePinnedToCore(ledControl, "ledControl", 10000, NULL, 3, NULL,  1); 
+  delay(250);
+  xTaskCreatePinnedToCore(apiControl, "apiControl", 20000, NULL, 3, NULL,  0); 
 
 }
 
 void loop() {
-  
-    String apiCallResult; 
 
-    //callTriMetApi(RED_ROUTE_ID, &apiCallResult);
-    
-    //Serial.print(apiCallResult);
+}
 
-    
+void apiControl(void* parameter)
+{
+  String apiCallResult; 
+
+  while(true)
+  {  
     callTriMetApi(RED_ROUTE_ID, &apiCallResult);
     parseApiString(&apiCallResult, &redLineTrains);
     apiCallResult = " ";
@@ -144,24 +169,27 @@ void loop() {
     delay(250);
     callTriMetApi(ORANGE_ROUTE_ID, &apiCallResult);
     parseApiString(&apiCallResult, &orangeLineTrains);
+    apiCallResult = " ";
 
     
-    
+    /*
+    //DEBUG CODE
     Serial.println();
-
-
     Serial.println("--------------");
-    Serial.println(orangeLineTrains.numOfTrains);
+    Serial.println(blueLineTrains.numOfTrains);
     Serial.println("--------------");
     
-    for(int i = 0; i < 27; i++)
+    for(int i = 0; i < 49; i++)
     {
-      Serial.print(orangeLineTrains.lat[i],7);
+      Serial.print(blueLineTrains.lat[i],7);
       Serial.print(" , ");
-      Serial.println(orangeLineTrains.lon[i],6);
-    }
+      Serial.println(blueLineTrains.lon[i],6);
+    }*/
 
     findStationOccupancy();
+
+    /*
+    //DEBUG CODE
     Serial.println("\n\n");
     Serial.println("---RED LINE---");
 
@@ -232,8 +260,8 @@ void loop() {
         Serial.println(ORANGE_STATION_BOUNDS.LON[i],6);
         Serial.println(i);
       }
-    }
-//while(true){}
-   delay(55000);
+    }*/
 
+   delay(55000);
+  }
 }
