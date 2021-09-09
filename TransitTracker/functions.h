@@ -410,7 +410,7 @@ void findStationOccupancy()
         }
         
         //If we have reached the end of the array, we have completed that train line  
-        if(globalIndx >= NUM_RED_STOPS)
+        if(globalIndx >= NUM_RED_STOPS && !hasFinishedRed)
         {
           globalIndx = 0;
           hasFinishedRed = true;
@@ -439,7 +439,7 @@ void findStationOccupancy()
         }
         
         //If we have reached the end of the array, we have completed that train line  
-        if(globalIndx >= NUM_BLUE_STOPS)
+        if(globalIndx >= NUM_BLUE_STOPS && !hasFinishedBlue)
         {
           globalIndx = 0;
           hasFinishedBlue = true;
@@ -468,7 +468,7 @@ void findStationOccupancy()
         }
         
         //If we have reached the end of the array, we have completed that train line  
-        if(globalIndx >= NUM_GREEN_STOPS)
+        if(globalIndx >= NUM_GREEN_STOPS && !hasFinishedGreen)
         {
           globalIndx = 0;
           hasFinishedGreen = true;
@@ -497,7 +497,7 @@ void findStationOccupancy()
         }
         
         //If we have reached the end of the array, we have completed that train line
-        if(globalIndx >= NUM_YELLOW_STOPS)
+        if(globalIndx >= NUM_YELLOW_STOPS && !hasFinishedYellow)
         {
           globalIndx = 0;
           hasFinishedYellow = true;
@@ -519,14 +519,14 @@ void findStationOccupancy()
           while(!canReadOccupancy){vTaskDelay(TASK_DELAY);} //Only continue if the occupancy array isnt being written to
           if(stationFilledLive.orangeStation[globalIndx] == true)
           {
-            ledsOrangeLine.setPixelColor(globalIndx, ledsOrangeLine.Color(255, 128, 0));
+            ledsOrangeLine.setPixelColor(globalIndx, ledsOrangeLine.Color(255,69,0));
             activeLedsNum++;
           }
           globalIndx++;
         }
 
         //If we have reached the end of the array, we have completed that train line
-        if(globalIndx >= NUM_ORANGE_STOPS)
+        if(globalIndx >= NUM_ORANGE_STOPS && !hasFinishedOrange)
         {
           globalIndx = 0;
           hasFinishedOrange = true;

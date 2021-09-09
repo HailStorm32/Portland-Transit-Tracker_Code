@@ -28,6 +28,7 @@ const int LED_DELAY_ON_MS = .5;
 const int LED_DELAY_OFF_MS = 0;
 
 bool canReadOccupancy = true;
+bool firstRun = true;
 
 struct redStationBounds
 {
@@ -111,6 +112,18 @@ void setup() {
   ledsGreenLine.begin();
   ledsYellowLine.begin();
   ledsOrangeLine.begin();
+
+  //Turn off all the LEDs
+  ledsRedLine.clear();
+  ledsBlueLine.clear();
+  ledsGreenLine.clear();
+  ledsYellowLine.clear();
+  ledsOrangeLine.clear();
+  ledsRedLine.show();
+  ledsBlueLine.show();
+  ledsGreenLine.show();
+  ledsYellowLine.show();
+  ledsOrangeLine.show();
  
   WiFi.begin(WIFI_SSID, WIFI_PSWD);
 
@@ -121,9 +134,15 @@ void setup() {
     Serial.print(".");
     if(indx < 19)
     {
-      ledsGreenLine.setPixelColor(indx, ledsGreenLine.Color(0, 150, 0));
+      ledsGreenLine.setPixelColor(indx, ledsGreenLine.Color(138,43,226));
       ledsGreenLine.show();
       indx++;
+    }
+    else if(indx >= 19)
+    {
+      indx = 0;
+      ledsGreenLine.clear();
+      ledsGreenLine.show();
     }
   }
 
@@ -135,8 +154,6 @@ void setup() {
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 
-  xTaskCreatePinnedToCore(ledControl, "ledControl", 10000, NULL, 3, NULL,  1); 
-  delay(250);
   xTaskCreatePinnedToCore(apiControl, "apiControl", 20000, NULL, 3, NULL,  0); 
 
 }
@@ -147,30 +164,88 @@ void loop() {
 
 void apiControl(void* parameter)
 {
-  String apiCallResult; 
+  String apiCallResult;
+
 
   while(true)
-  {  
-    callTriMetApi(RED_ROUTE_ID, &apiCallResult);
-    parseApiString(&apiCallResult, &redLineTrains);
-    apiCallResult = " ";
-    delay(250);
-    callTriMetApi(BLUE_ROUTE_ID, &apiCallResult);
-    parseApiString(&apiCallResult, &blueLineTrains);
-    apiCallResult = " ";
-    delay(250);
-    callTriMetApi(GREEN_ROUTE_ID, &apiCallResult);
-    parseApiString(&apiCallResult, &greenLineTrains);
-    apiCallResult = " ";
-    delay(250);
-    callTriMetApi(YELLOW_ROUTE_ID, &apiCallResult);
-    parseApiString(&apiCallResult, &yellowLineTrains);
-    apiCallResult = " ";
-    delay(250);
-    callTriMetApi(ORANGE_ROUTE_ID, &apiCallResult);
-    parseApiString(&apiCallResult, &orangeLineTrains);
-    apiCallResult = " ";
+  { 
+    if(firstRun)
+    {
+      ledsRedLine.setPixelColor(0, ledsRedLine.Color(150, 0, 0));
+      ledsRedLine.show();
+      callTriMetApi(RED_ROUTE_ID, &apiCallResult);
+      parseApiString(&apiCallResult, &redLineTrains);
+      apiCallResult = " ";
+      delay(250);
+      
+      ledsBlueLine.setPixelColor(0, ledsBlueLine.Color(0, 0, 150));
+      ledsBlueLine.show();
+      callTriMetApi(BLUE_ROUTE_ID, &apiCallResult);
+      parseApiString(&apiCallResult, &blueLineTrains);
+      apiCallResult = " ";
+      delay(250);
 
+      ledsGreenLine.setPixelColor(0, ledsGreenLine.Color(0, 150, 0));
+      ledsGreenLine.show();
+      callTriMetApi(GREEN_ROUTE_ID, &apiCallResult);
+      parseApiString(&apiCallResult, &greenLineTrains);
+      apiCallResult = " ";
+      delay(250);
+
+      ledsYellowLine.setPixelColor(0, ledsYellowLine.Color(255, 255, 0));
+      ledsYellowLine.show();
+      callTriMetApi(YELLOW_ROUTE_ID, &apiCallResult);
+      parseApiString(&apiCallResult, &yellowLineTrains);
+      apiCallResult = " ";
+      delay(250);
+      
+      ledsOrangeLine.setPixelColor(0, ledsOrangeLine.Color(255,69,0));
+      ledsOrangeLine.show();
+      callTriMetApi(ORANGE_ROUTE_ID, &apiCallResult);
+      parseApiString(&apiCallResult, &orangeLineTrains);
+      apiCallResult = " ";
+
+      ledsRedLine.clear();
+      ledsBlueLine.clear();
+      ledsGreenLine.clear();
+      ledsYellowLine.clear();
+      ledsOrangeLine.clear();
+      ledsRedLine.show();
+      ledsBlueLine.show();
+      ledsGreenLine.show();
+      ledsYellowLine.show();
+      ledsOrangeLine.show();
+
+      xTaskCreatePinnedToCore(ledControl, "ledControl", 10000, NULL, 3, NULL,  1); 
+
+      firstRun = false;
+    }
+    else
+    {
+      callTriMetApi(RED_ROUTE_ID, &apiCallResult);
+      parseApiString(&apiCallResult, &redLineTrains);
+      apiCallResult = " ";
+      delay(250);
+      callTriMetApi(BLUE_ROUTE_ID, &apiCallResult);
+      parseApiString(&apiCallResult, &blueLineTrains);
+      apiCallResult = " ";
+      delay(250);
+      callTriMetApi(GREEN_ROUTE_ID, &apiCallResult);
+      parseApiString(&apiCallResult, &greenLineTrains);
+      apiCallResult = " ";
+      delay(250);
+      callTriMetApi(YELLOW_ROUTE_ID, &apiCallResult);
+      parseApiString(&apiCallResult, &yellowLineTrains);
+      apiCallResult = " ";
+      delay(250);
+      callTriMetApi(ORANGE_ROUTE_ID, &apiCallResult);
+      parseApiString(&apiCallResult, &orangeLineTrains);
+      apiCallResult = " ";
+
+      findStationOccupancy();
+
+    }
+     
     
     /*
     //DEBUG CODE
@@ -187,7 +262,10 @@ void apiControl(void* parameter)
     }*/
 
     findStationOccupancy();
+    
+    
 
+    
     /*
     //DEBUG CODE
     Serial.println("\n\n");
