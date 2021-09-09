@@ -1,6 +1,8 @@
 Info
-==========
-This the code for a custom PCB that shows in real time what TriMet MAX stations have a train at them. Details regarding the board can be found <a href="https://github.com/HailStorm32/Portland-Transit-Tracker_PCB">here</a>.
+=========
+This the code for a custom PCB that shows in real time what TriMet MAX stations have a train at them. Details regarding the board can be found <a href="https://github.com/HailStorm32/Portland-Transit-Tracker_PCB">here</a>. More detail into how this was made, can be found <a href="https://www.vsickle.net/projects/trimet-transit-tracker.html">here</a>
+
+<img src="https://i.imgur.com/3MdGMTH.jpg"></img>
 
 For those looking for how to flash their boards, please see below.
 
